@@ -1,0 +1,214 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  //output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+
+
+enum JobType {
+  ONSITE
+  REMOTE
+  HYBRID
+} 
+
+//add new
+enum UserStatus {
+  ACTIVE
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum ApplicationStatus {
+  APPLIED
+  REVIEWING
+  SHORTLISTED
+  INTERVIEW
+  REJECTED
+  HIRED
+}
+
+enum InterviewStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  RESCHEDULED
+}
+
+// ==================== AUTHENTICATION ====================
+model Auth {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+
+  email     String   @unique
+  password  String
+
+  userId    String   @unique @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ==================== AUTHORIZATION====================
+
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+
+  name      String
+  status    UserStatus @default(ACTIVE)// add new
+
+  roleId    String   @db.ObjectId
+  role      Role     @relation(fields: [roleId], references: [id])
+
+  auth      Auth?
+
+  company       Company?
+  applications  Application[]
+  resume        Resume?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ==================== RBAC ====================
+
+model Role {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+
+  roleName  String   @unique
+
+  users     User[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ==================== COMPANY ====================
+
+model Company {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+
+  name        String
+  description String?
+  website     String?
+  logo        String?
+  location    String?
+
+  recruiterId String   @unique @db.ObjectId
+  recruiter   User     @relation(fields: [recruiterId], references: [id])
+
+  jobs        Job[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ==================== experience ====================
+
+model Experience {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  experienceName  String   @unique
+
+  jobs            Job[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ==================== JOB ====================
+
+model Job {
+  id                  String       @id @default(auto()) @map("_id") @db.ObjectId
+  title               String
+  description         String
+  responsibilities    String[]
+  requirements        String[]
+  benefits            String[]
+  location            String
+  salary              String?
+  jobType             JobType
+  skills              String[]
+  applicationDeadline DateTime?
+  isActive            Boolean      @default(true)
+
+  companyId           String       @db.ObjectId
+  company             Company      @relation(fields: [companyId], references: [id])
+
+  experienceId        String?      @db.ObjectId
+  experience          Experience? @relation(fields: [experienceId], references: [id])
+
+  applications        Application[]
+
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+}
+
+// ==================== APPLICATION ====================
+
+model Application {
+  id        String            @id @default(auto()) @map("_id") @db.ObjectId
+  status    ApplicationStatus @default(APPLIED)
+
+  userId String   @db.ObjectId // chage candidated to user readbilte
+  user   User     @relation(fields: [userId], references: [id])
+
+  jobId      String   @db.ObjectId
+  job        Job      @relation(fields: [jobId], references: [id])
+
+  interview  Interview?
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+   @@unique([userId, jobId])
+}
+
+// ==================== RESUME ====================
+
+model Resume {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+
+  fileName  String
+  fileUrl   String?
+  fileType  String
+  fileSize  Int?
+
+  userId String @unique @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ==================== INTERVIEW ====================
+
+model Interview {
+  id            String          @id @default(auto()) @map("_id") @db.ObjectId
+
+  scheduledAt   DateTime
+  duration      Int?
+  meetingLink   String?
+  location      String?
+  status        InterviewStatus @default(SCHEDULED)
+  notes         String?
+
+  applicationId String      @unique @db.ObjectId
+  application   Application @relation(fields: [applicationId], references: [id])
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+

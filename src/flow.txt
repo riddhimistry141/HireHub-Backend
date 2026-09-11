@@ -1,0 +1,143 @@
+Controller
+├── Read req.body / params
+├── Validate request
+├── Prepare data object
+└── Call service
+
+Service
+├── Business rules
+├── Authorization/ownership logic
+├── Reusable database helpers
+├── Password hashing / JWT generation
+└── Prisma queries
+
+Routes
+└── Middleware + controller
+
+                    HireHub Backend
+                         │
+             ┌───────────┴───────────┐
+             │                       │
+          Routes                 Middleware
+             │                       │
+             └───────────┬───────────┘
+                         ↓
+                    Controllers
+                         │
+              Validate + prepare data
+                         │
+                         ↓
+                      Services
+                         │
+          ┌──────────────┼──────────────┐
+          ↓              ↓              ↓
+       Business       Helpers        Security
+        rules       reusable DB     bcrypt/JWT
+          │              │
+          └──────────────┘
+                         ↓
+                       Prisma
+                         ↓
+                      MongoDB
+
+
+----------------------------------------------------------------------------
+
+                         HIREHUB
+                            │
+              ┌─────────────┼─────────────┐
+              │             │             │
+            ADMIN       RECRUITER        USER
+              │             │             │
+              │             │             │
+       Manage Recruiter   Company       Browse Jobs
+              │             │             │
+       Approve/Reject      Jobs          Job Details
+              │             │             │
+       Manage Users        Post Job       Apply
+              │             │             │
+       Manage Jobs         Applications   My Applications
+              │             │             │
+        Dashboard          Review         Status
+                            │             │
+                       Shortlist          │
+                            │             │
+                       Interview          │
+                            │             │
+                       Hire/Reject ◄──────┘
+
+-----------------------------------------------------------------------
+
+                    REGISTER
+                       │
+             ┌─────────┴─────────┐
+             │                   │
+           USER              RECRUITER
+             │                   │
+          ACTIVE              PENDING
+             │                   │
+             │             Admin reviews
+             │                   │
+             │          ┌────────┴────────┐
+             │          │                 │
+             │       APPROVED          REJECTED
+             │          │
+             │       SUSPENDED
+             │
+             └──────────┬──────────────┐
+                        │              │
+                       LOGIN           │
+                        │              │
+                        ▼              │
+                       JWT             │
+                        │              │
+                        ▼              │
+                 JWT Middleware        │
+                        │              │
+                        ▼              │
+                  Role Middleware      │
+                        │
+                        ▼
+                      ADMIN
+                        │
+             ┌──────────┼───────────┐
+             ▼          ▼           ▼
+          Pending     Approve     Reject
+          Recruiters  Recruiter   Recruiter
+                        │
+                        ▼
+                     Suspend
+
+---------------------------------------------------------------------------------
+
+                   AUTH
+                    │
+          ┌─────────┴─────────┐
+          │                   │
+       Register              Login
+          │                   │
+          │                   ▼
+          │                  JWT
+          │                   │
+          │                   ▼
+          │            authMiddleware
+          │                   │
+          │                   ▼
+          │            roleMiddleware
+          │                   │
+          │             ┌─────┴─────┐
+          │             │           │
+          │           ADMIN     Other roles
+          │             │
+          │             ▼
+          │       Admin Controller
+          │             │
+          │             ▼
+          │        Admin Service
+          │             │
+          └─────────────┤
+                        ▼
+                      Prisma
+                        │
+                        ▼
+                     MongoDB
