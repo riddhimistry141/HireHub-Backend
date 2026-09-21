@@ -141,3 +141,43 @@ Routes
                         │
                         ▼
                      MongoDB
+
+
+ ---------------------------------------------------------
+                   Create Job
+                      │
+             ┌────────┴────────┐
+             ↓                 ↓
+       Save as Draft       Publish Job
+             ↓                 ↓
+          DRAFT              ACTIVE
+                               │
+                         Close Job
+                               ↓
+                            CLOSED
+                               │
+                         Reopen Job
+                               ↓
+                            ACTIVE     
+------------------------------------------------------
+job apply flow:
+
+User applies
+   ↓
+User exists?
+   ↓
+Resume uploaded?
+   ↓
+User has USER role?
+   ↓
+Job exists?
+   ↓
+Job ACTIVE?
+   ↓
+Deadline not passed?
+   ↓
+Slots available?
+   ↓
+Already applied?
+   ↓
+Create application

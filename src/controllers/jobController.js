@@ -1,4 +1,4 @@
-const { JobType } = require("@prisma/client");
+const { JobType, JobStatus } = require("@prisma/client");
 const jobService = require("../services/jobService");
 
 const allowedJobTypes = Object.values(JobType);
@@ -6,7 +6,7 @@ const allowedJobTypes = Object.values(JobType);
 // CREATE JOB
 const createJob = async (req, res) => {
   try {
-    const recruiterId = req.user.userId;
+    const recruiterId = req.user.id;
 
     const {
       title,
@@ -20,6 +20,8 @@ const createJob = async (req, res) => {
       requirements,
       benefits,
       applicationDeadline,
+      totalSlots,
+      status,
     } = req.body;
 
     // Required field validation
@@ -31,7 +33,7 @@ const createJob = async (req, res) => {
       });
     }
 
-    // Validate job type from Prisma enum
+    // Validate job type
     if (!allowedJobTypes.includes(jobType)) {
       return res.status(400).json({
         success: false,
@@ -40,11 +42,30 @@ const createJob = async (req, res) => {
       });
     }
 
+    if (status && !Object.values(JobStatus).includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid job status",
+        allowedStatuses: Object.values(JobStatus),
+      });
+    }
+
     // Validate skills
     if (!Array.isArray(skills)) {
       return res.status(400).json({
         success: false,
         message: "Skills must be an array",
+      });
+    }
+
+    // Convert totalSlots to number
+    const parsedTotalSlots = Number(totalSlots);
+
+    // Validate totalSlots
+    if (!Number.isInteger(parsedTotalSlots) || parsedTotalSlots <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Total slots must be a positive number",
       });
     }
 
@@ -67,6 +88,10 @@ const createJob = async (req, res) => {
       applicationDeadline: applicationDeadline
         ? new Date(applicationDeadline)
         : null,
+
+      totalSlots: parsedTotalSlots,
+
+      status: status || "DRAFT",
     };
 
     // Check invalid deadline
@@ -78,6 +103,22 @@ const createJob = async (req, res) => {
         success: false,
         message: "Invalid application deadline",
       });
+    }
+
+    // Check deadline is not before today
+    if (jobData.applicationDeadline) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const deadline = new Date(jobData.applicationDeadline);
+      deadline.setHours(0, 0, 0, 0);
+
+      if (deadline < today) {
+        return res.status(400).json({
+          success: false,
+          message: "Application deadline cannot be before today",
+        });
+      }
     }
 
     const job = await jobService.createJob(recruiterId, jobData);
@@ -160,10 +201,34 @@ const getJobById = async (req, res) => {
   }
 };
 
+const getRecruiterJobById = async (req, res) => {
+  try {
+    const recruiterId = req.user.id;
+    const { id } = req.params;
+
+    const job = await jobService.getRecruiterJobById(
+      recruiterId,
+      id
+    );
+
+    res.status(200).json({
+      success: true,
+      data: job,
+    });
+  } catch (error) {
+    console.error("Get recruiter job error:", error);
+
+    res.status(404).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 // GET RECRUITER'S JOBS
 const getMyJobs = async (req, res) => {
   try {
-    const recruiterId = req.user.userId;
+    const recruiterId = req.user.id;
 
     const jobs = await jobService.getMyJobs(recruiterId);
 
@@ -184,7 +249,7 @@ const getMyJobs = async (req, res) => {
 // UPDATE JOB
 const updateJob = async (req, res) => {
   try {
-    const recruiterId = req.user.userId;
+    const recruiterId = req.user.id;
     const { id } = req.params;
 
     const {
@@ -199,7 +264,7 @@ const updateJob = async (req, res) => {
       requirements,
       benefits,
       applicationDeadline,
-      isActive,
+      status,
     } = req.body;
 
     // Validate job type
@@ -293,9 +358,16 @@ const updateJob = async (req, res) => {
       }
     }
 
-    if (isActive !== undefined) {
-      jobData.isActive = isActive;
-    }
+    if (status !== undefined) {
+  if (!Object.values(JobStatus).includes(status)) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid job status",
+    });
+  }
+
+  jobData.status = status;
+}
 
     const job = await jobService.updateJob(recruiterId, id, jobData);
 
@@ -340,7 +412,7 @@ const updateJob = async (req, res) => {
 // DELETE JOB
 const deleteJob = async (req, res) => {
   try {
-    const recruiterId = req.user.userId;
+    const recruiterId = req.user.id;
     const { id } = req.params;
 
     await jobService.deleteJob(recruiterId, id);
@@ -366,11 +438,81 @@ const deleteJob = async (req, res) => {
   }
 };
 
+const toggleSaveJob = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { jobId } = req.params;
+
+    const result = await jobService.saveJob(userId, jobId);
+
+    return res.status(200).json({
+      success: true,
+      message: result.message,
+      saved: result.saved,
+    });
+  } catch (error) {
+    console.error("Toggle save job error:", error);
+
+    return res.status(400).json({
+      success: false,
+      message: error.message || "Failed to save job",
+    });
+  }
+};
+
+const getSavedJobStatus = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { jobId } = req.params;
+
+    const result = await jobService.checkSavedJob(
+      userId,
+      jobId
+    );
+
+    return res.status(200).json({
+      success: true,
+      saved: result.saved,
+    });
+  } catch (error) {
+    console.error("Check saved job error:", error);
+
+    return res.status(400).json({
+      success: false,
+      message: error.message || "Failed to check saved job",
+    });
+  }
+};
+
+const getSavedJobs = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const savedJobs = await jobService.getSavedJobs(userId);
+
+    return res.status(200).json({
+      success: true,
+      data: savedJobs,
+    });
+  } catch (error) {
+    console.error("Get saved jobs error:", error);
+
+    return res.status(400).json({
+      success: false,
+      message: error.message || "Failed to fetch saved jobs",
+    });
+  }
+};
+
 module.exports = {
   createJob,
   getAllJobs,
   getJobById,
+  getRecruiterJobById,
   getMyJobs,
   updateJob,
   deleteJob,
+  toggleSaveJob,
+  getSavedJobStatus,
+  getSavedJobs,
 };

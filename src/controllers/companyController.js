@@ -6,7 +6,7 @@ const companyService = require("../services/companyService");
 
 const createCompany = async (req, res) => {
   try {
-    const recruiterId = req.user.userId;
+    const recruiterId = req.user.id;
 
     const {
       name,
@@ -62,7 +62,7 @@ const createCompany = async (req, res) => {
 
 const getMyCompany = async (req, res) => {
   try {
-    const recruiterId = req.user.userId;
+    const recruiterId = req.user.id;
 
     const company = await companyService.getMyCompany(recruiterId);
 
@@ -94,7 +94,7 @@ const getMyCompany = async (req, res) => {
 
 const updateCompany = async (req, res) => {
   try {
-    const recruiterId = req.user.userId;
+    const recruiterId = req.user.id;
 
     const {
       name,
@@ -152,7 +152,7 @@ const updateCompany = async (req, res) => {
 
 const deleteCompany = async (req, res) => {
   try {
-    const recruiterId = req.user.userId;
+    const recruiterId = req.user.id;
 
     await companyService.deleteCompany(recruiterId);
 

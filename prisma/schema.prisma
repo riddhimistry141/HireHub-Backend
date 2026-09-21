@@ -22,6 +22,12 @@ enum JobType {
   HYBRID
 } 
 
+enum JobStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+}
+
 //add new
 enum UserStatus {
   ACTIVE
@@ -38,6 +44,7 @@ enum ApplicationStatus {
   INTERVIEW
   REJECTED
   HIRED
+  WITHDRAWN
 }
 
 enum InterviewStatus {
@@ -77,6 +84,7 @@ model User {
   company       Company?
   applications  Application[]
   resume        Resume?
+  savedJobs     SavedJob[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -141,7 +149,8 @@ model Job {
   jobType             JobType
   skills              String[]
   applicationDeadline DateTime?
-  isActive            Boolean      @default(true)
+  totalSlots          Int
+  status              JobStatus    @default(DRAFT)
 
   companyId           String       @db.ObjectId
   company             Company      @relation(fields: [companyId], references: [id])
@@ -150,9 +159,27 @@ model Job {
   experience          Experience? @relation(fields: [experienceId], references: [id])
 
   applications        Application[]
+  savedJobs           SavedJob[]
 
   createdAt           DateTime     @default(now())
   updatedAt           DateTime     @updatedAt
+}
+
+// ==================== SAVE JOB ====================
+
+
+model SavedJob {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id])
+
+  jobId     String   @db.ObjectId
+  job       Job      @relation(fields: [jobId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, jobId])
 }
 
 // ==================== APPLICATION ====================
@@ -160,6 +187,9 @@ model Job {
 model Application {
   id        String            @id @default(auto()) @map("_id") @db.ObjectId
   status    ApplicationStatus @default(APPLIED)
+
+  resumeUrl    String?
+  coverLetter  String?
 
   userId String   @db.ObjectId // chage candidated to user readbilte
   user   User     @relation(fields: [userId], references: [id])

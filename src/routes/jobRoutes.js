@@ -18,6 +18,13 @@ router.get(
   jobController.getMyJobs
 );
 
+router.get(
+  "/recruiter/:id",
+  authMiddleware,
+  authorizeRoles("RECRUITER"),
+  jobController.getRecruiterJobById
+);
+
 router.post(
   "/",
   authMiddleware,
@@ -37,6 +44,29 @@ router.delete(
   authMiddleware,
   authorizeRoles("RECRUITER"),
   jobController.deleteJob
+);
+
+//====user======
+
+router.post(
+  "/:jobId/save",
+  authMiddleware,
+  authorizeRoles("USER"),
+  jobController.toggleSaveJob
+);
+
+router.get(
+  "/saved",
+  authMiddleware,
+  authorizeRoles("USER"),
+  jobController.getSavedJobs
+);
+
+router.get(
+  "/:jobId/saved",
+  authMiddleware,
+  authorizeRoles("USER"),
+  jobController.getSavedJobStatus
 );
 
 

@@ -7,6 +7,8 @@ const adminRoutes = require("./routes/adminRoutes");
 const companyRoutes = require("./routes/companyRoutes");
 const jobRoutes = require("./routes/jobRoutes");
 const experienceRoutes = require("./routes/experienceRoutes");
+const applicationRoutes = require("./routes/applicationRoutes");
+const resumeRoutes = require("./routes/resumeRoutes");
 
 const app = express();
 
@@ -21,6 +23,8 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/company", companyRoutes);
 app.use("/api/jobs", jobRoutes);
 app.use("/api/experiences", experienceRoutes);
+app.use("/api/applications", applicationRoutes);
+app.use("/api/resume", resumeRoutes);
 
 // Root
 app.get("/", (req, res) => {

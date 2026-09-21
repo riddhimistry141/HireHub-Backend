@@ -172,7 +172,7 @@ const loginUser = async (loginData) => {
   // JWT
   const token = jwt.sign(
     {
-      userId: user.id,
+      id: user.id,
       roleName,
       name: user.name,
     },
